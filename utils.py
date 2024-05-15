@@ -20,13 +20,6 @@ def collision_checking(blocks, path, ax, verbose=False):
     # make 6 planes
     xmin, ymin, zmin = block[0], block[1], block[2]
     xmax, ymax, zmax = block[3], block[4], block[5]
-    # fit a better plane using 
-    # plane_front = Plane.best_fit([[xmin,ymin,zmax],[xmax,ymin,zmax],[xmin,ymin,zmin],[xmin,ymin,zmax]])
-    # plane_top = Plane.best_fit([[xmin,ymin,zmax],[xmax,ymin,zmax],[xmin,ymax,zmax],[xmin,ymin,zmax]])
-    # plane_back = Plane.best_fit([[xmin,ymax,zmax],[xmin,ymax,zmin],[xmax,ymax,zmax],[xmin,ymax,zmax]])
-    # plane_left = Plane.best_fit([[xmin,ymin,zmax],[xmin,ymax,zmax],[xmin,ymin,zmin],[xmin,ymin,zmax]])
-    # plane_right = Plane.best_fit([[xmax,ymin,zmax],[xmax,ymax,zmax],[xmax,ymin,zmin],[xmax,ymin,zmax]])
-    # plane_bottom = Plane.best_fit([[xmax,ymin,zmin],[xmin,ymin,zmin],[xmax,ymax,zmin],[xmax,ymin,zmin]])
 
     plane_front = Plane.from_points([xmin,ymin,zmax], [xmax,ymin,zmax], [xmin,ymin,zmin])
     plane_top = Plane.from_points([xmin,ymin,zmax], [xmax,ymin,zmax], [xmin,ymax,zmax])
@@ -57,7 +50,7 @@ def collision_checking(blocks, path, ax, verbose=False):
           is_contained = check_points_in_LineSegments(path[p], path[p+1], np.array([pt_x,pt_y,pt_z]))
           if is_contained:
             collision_points.append(np.array([pt_x,pt_y,pt_z]))
-            print("collision occur at",(pt_x,pt_y,pt_z))
+            # print("collision occur at",(pt_x,pt_y,pt_z))
   collision_points = np.array(collision_points)
   if verbose and len(collision_points) > 0:
     ax.plot(collision_points[:,0], collision_points[:,1], collision_points[:,2], 'g.')
@@ -131,3 +124,72 @@ def draw_block_list(ax,blocks):
     pc.set_facecolor(fcl)
     h = ax.add_collection3d(pc)
     return h
+  
+def meter2grid(boundary, position):
+    '''
+    boundary = [['xmin', 'ymin', 'zmin', 'xmax', 'ymax', 'zmax','r','g','b']]
+    x: position in meters
+    m: minimum value of the map
+    r: resolution of the map
+    return: position in grid (cell)
+    '''
+    m = boundary[0,:3]
+    r = 0.1*np.ones(3)
+    x = position
+    return tuple(np.floor((x-m)/r).astype(int))
+
+
+def test_single_cube(verbose = True):
+  print('Running single cube test...\n') 
+  start = np.array([2.3, 2.3, 1.3])
+  goal = np.array([7.0, 7.0, 5.5])
+  map_path = './maps/single_cube.txt'
+  return start, goal, map_path
+  
+  
+def test_maze(verbose = True):
+  print('Running maze test...\n') 
+  start = np.array([0.0, 0.0, 1.0])
+  goal = np.array([12.0, 12.0, 5.0])
+  map_path = './maps/maze.txt'
+  return start, goal, map_path
+
+    
+def test_window(verbose = True):
+  print('Running window test...\n') 
+  start = np.array([0.2, -4.9, 0.2])
+  goal = np.array([6.0, 18.0, 3.0])
+  map_path = './maps/window.txt'
+  return start, goal, map_path
+
+  
+def test_tower(verbose = True):
+  print('Running tower test...\n') 
+  start = np.array([2.5, 4.0, 0.5])
+  goal = np.array([4.0, 2.5, 19.5])
+  map_path = './maps/tower.txt'
+  return start, goal, map_path
+
+     
+def test_flappy_bird(verbose = True):
+  print('Running flappy bird test...\n') 
+  start = np.array([0.5, 2.5, 5.5])
+  goal = np.array([19.0, 2.5, 5.5])
+  map_path = './maps/flappy_bird.txt'
+  return start, goal, map_path
+
+  
+def test_room(verbose = True):
+  print('Running room test...\n') 
+  start = np.array([1.0, 5.0, 1.5])
+  goal = np.array([9.0, 7.0, 1.5])
+  map_path = './maps/room.txt'
+  return start, goal, map_path
+
+
+def test_monza(verbose = True):
+  print('Running monza test...\n')
+  start = np.array([0.5, 1.0, 4.9])
+  goal = np.array([3.8, 1.0, 0.1])
+  map_path = './maps/monza.txt'
+  return start, goal, map_path
