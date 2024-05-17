@@ -6,17 +6,9 @@ import matplotlib.pyplot as plt; plt.ion()
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-def check_points_in_LineSegments(pt1, pt2, collision_points):
-    line_seg = LineSegment(pt1, pt2)
-    return line_seg.contains_point(collision_points)
-
-def collision_checking(blocks, path, ax, verbose=False):
-  '''
-  check if the path collides with the blocks(obstacles) using AABBs and line segment intersection
-  Treating path as a set of points and check if each points collide with blocks
-  '''
-  collision_points = []
-  for block in blocks:
+def generate_planes(blocks):
+  planes_dict = dict()
+  for i, block in enumerate(blocks):
     # make 6 planes
     xmin, ymin, zmin = block[0], block[1], block[2]
     xmax, ymax, zmax = block[3], block[4], block[5]
@@ -27,7 +19,72 @@ def collision_checking(blocks, path, ax, verbose=False):
     plane_left = Plane.from_points([xmin,ymin,zmax], [xmin,ymax,zmax], [xmin,ymin,zmin])
     plane_right = Plane.from_points([xmax,ymin,zmax], [xmax,ymax,zmax], [xmax,ymin,zmin])
     plane_bottom = Plane.from_points([xmax,ymin,zmin], [xmin,ymin,zmin], [xmax,ymax,zmin])
-    planes = [plane_front, plane_top, plane_back, plane_left, plane_right, plane_bottom]
+    planes_dict[i] = [plane_front, plane_top, plane_back, plane_left, plane_right, plane_bottom]
+  return planes_dict
+  
+def check_points_in_LineSegments(pt1, pt2, collision_points):
+  line_seg = LineSegment(pt1, pt2)
+  return line_seg.contains_point(collision_points)
+
+def collision_checking(blocks, path, planes_dict, ax, verbose=False):
+  '''
+  check if the path collides with the blocks(obstacles) using AABBs and line segment intersection
+  Treating path as a set of points and check if each points collide with blocks
+  '''
+  collision_points = []
+  for i, block in enumerate(blocks):
+    planes = planes_dict[i]
+    for p in range(len(path)-1):
+      point_intersections = []
+      for plane in planes:
+        plane_normal = plane.normal
+        path_line = Line.from_points(path[p], path[p+1])
+        path_line_dir = path_line.direction
+        # skip collision checking if the plane and the path are parallel
+        if plane_normal.is_perpendicular(path_line_dir):
+          continue
+        point_intersections.append(plane.intersect_line(path_line))
+      
+      for i in range(len(point_intersections)):
+        pt_x = point_intersections[i][0]
+        pt_y = point_intersections[i][1]
+        pt_z = point_intersections[i][2]
+        # AABBs
+        if pt_x >= block[0] and pt_x<=block[3] and pt_y>=block[1] and pt_y<=block[4] and pt_z>=block[2] and pt_z<=block[5]: 
+          # check if the point is in the line segment
+          is_contained = check_points_in_LineSegments(path[p], path[p+1], np.array([pt_x,pt_y,pt_z]))
+          if is_contained:
+            collision_points.append(np.array([pt_x,pt_y,pt_z]))
+            # print("collision occur at",(pt_x,pt_y,pt_z))
+  collision_points = np.array(collision_points)
+  if verbose and len(collision_points) > 0:
+    ax.plot(collision_points[:,0], collision_points[:,1], collision_points[:,2], 'y*')
+  if len(collision_points) > 0:
+    collided = True
+  else:
+    collided = False  
+  return collision_points, collided
+
+def collision_checking_ori(blocks, path, planes_dict, ax, verbose=False):
+  '''
+  check if the path collides with the blocks(obstacles) using AABBs and line segment intersection
+  Treating path as a set of points and check if each points collide with blocks
+  '''
+  collision_points = []
+  for i, block in enumerate(blocks):
+    planes = planes_dict[i]
+    print(planes)
+    # # make 6 planes
+    # xmin, ymin, zmin = block[0], block[1], block[2]
+    # xmax, ymax, zmax = block[3], block[4], block[5]
+
+    # plane_front = Plane.from_points([xmin,ymin,zmax], [xmax,ymin,zmax], [xmin,ymin,zmin])
+    # plane_top = Plane.from_points([xmin,ymin,zmax], [xmax,ymin,zmax], [xmin,ymax,zmax])
+    # plane_back = Plane.from_points([xmin,ymax,zmax], [xmin,ymax,zmin], [xmax,ymax,zmax])
+    # plane_left = Plane.from_points([xmin,ymin,zmax], [xmin,ymax,zmax], [xmin,ymin,zmin])
+    # plane_right = Plane.from_points([xmax,ymin,zmax], [xmax,ymax,zmax], [xmax,ymin,zmin])
+    # plane_bottom = Plane.from_points([xmax,ymin,zmin], [xmin,ymin,zmin], [xmax,ymax,zmin])
+    # planes = [plane_front, plane_top, plane_back, plane_left, plane_right, plane_bottom]
 
     for p in range(len(path)-1):
       point_intersections = []
@@ -59,6 +116,31 @@ def collision_checking(blocks, path, ax, verbose=False):
   else:
     collided = False  
   return collision_points, collided
+
+def collision_checking_v2(blocks, path, ax=None, verbose=False):
+  '''
+  First check if next point is closed to any block or not
+  path: [current_position, next_position]
+  '''
+  collision_points = []
+  # current_position = path[0]
+  # next_position = path[1]
+  for p in path:
+    pt_x,pt_y,pt_z = p[0], p[1], p[2]
+    collied = False
+    for block in blocks:
+      # Minkowski sum of a motion step and a block
+      if pt_x >= block[0]-0.5 and pt_x<=block[3]+0.5 and pt_y>=block[1]-0.5 and pt_y<=block[4]+0.5 and pt_z>=block[2]-0.5 and pt_z<=block[5]+0.5: 
+        collision_points.append(np.array([pt_x,pt_y,pt_z]))
+        print("collision occur at",(pt_x,pt_y,pt_z))
+        collied = True
+  collision_points = np.array(collision_points)
+  if verbose and len(collision_points) > 1:
+    ax.plot(collision_points[:,0], collision_points[:,1], collision_points[:,2], 'y*')
+  elif verbose and len(collision_points) == 1:
+    ax.plot(collision_points[0][0], collision_points[0][1], collision_points[0][2], 'y*')
+    
+  return collision_points, collied
 
 def tic():
   return time.time()
@@ -125,7 +207,7 @@ def draw_block_list(ax,blocks):
     h = ax.add_collection3d(pc)
     return h
   
-def meter2grid(boundary, position):
+def meter2grid(boundary, position, resolution):
     '''
     boundary = [['xmin', 'ymin', 'zmin', 'xmax', 'ymax', 'zmax','r','g','b']]
     x: position in meters
@@ -134,7 +216,7 @@ def meter2grid(boundary, position):
     return: position in grid (cell)
     '''
     m = boundary[0,:3]
-    r = 0.1*np.ones(3)
+    r = resolution*np.ones(3)
     x = position
     return tuple(np.floor((x-m)/r).astype(int))
 
