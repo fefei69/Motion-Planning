@@ -37,7 +37,10 @@ def runtest(mapfile, start, goal, verbose = True):
   # TODO: You can implement your own algorithm or use an existing library for segment and 
   #       axis-aligned bounding box (AABB) intersection
   
-  collision_points = collision_checking(blocks, path, ax, verbose)
+  collision_points, collision = collision_checking(blocks, path, generate_planes(blocks), ax, verbose)
+  # print(generate_planes(blocks))
+  # import pdb; pdb.set_trace()
+  # collision_points, collision = collision_checking_ori(blocks, path, generate_planes(blocks), ax, verbose)
   if len(collision_points) > 0:
     collision = True
   else:

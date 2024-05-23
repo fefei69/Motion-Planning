@@ -73,18 +73,6 @@ def collision_checking_ori(blocks, path, planes_dict, ax, verbose=False):
   collision_points = []
   for i, block in enumerate(blocks):
     planes = planes_dict[i]
-    print(planes)
-    # # make 6 planes
-    # xmin, ymin, zmin = block[0], block[1], block[2]
-    # xmax, ymax, zmax = block[3], block[4], block[5]
-
-    # plane_front = Plane.from_points([xmin,ymin,zmax], [xmax,ymin,zmax], [xmin,ymin,zmin])
-    # plane_top = Plane.from_points([xmin,ymin,zmax], [xmax,ymin,zmax], [xmin,ymax,zmax])
-    # plane_back = Plane.from_points([xmin,ymax,zmax], [xmin,ymax,zmin], [xmax,ymax,zmax])
-    # plane_left = Plane.from_points([xmin,ymin,zmax], [xmin,ymax,zmax], [xmin,ymin,zmin])
-    # plane_right = Plane.from_points([xmax,ymin,zmax], [xmax,ymax,zmax], [xmax,ymin,zmin])
-    # plane_bottom = Plane.from_points([xmax,ymin,zmin], [xmin,ymin,zmin], [xmax,ymax,zmin])
-    # planes = [plane_front, plane_top, plane_back, plane_left, plane_right, plane_bottom]
 
     for p in range(len(path)-1):
       point_intersections = []
@@ -117,30 +105,30 @@ def collision_checking_ori(blocks, path, planes_dict, ax, verbose=False):
     collided = False  
   return collision_points, collided
 
-def collision_checking_v2(blocks, path, ax=None, verbose=False):
-  '''
-  First check if next point is closed to any block or not
-  path: [current_position, next_position]
-  '''
-  collision_points = []
-  # current_position = path[0]
-  # next_position = path[1]
-  for p in path:
-    pt_x,pt_y,pt_z = p[0], p[1], p[2]
-    collied = False
-    for block in blocks:
-      # Minkowski sum of a motion step and a block
-      if pt_x >= block[0]-0.5 and pt_x<=block[3]+0.5 and pt_y>=block[1]-0.5 and pt_y<=block[4]+0.5 and pt_z>=block[2]-0.5 and pt_z<=block[5]+0.5: 
-        collision_points.append(np.array([pt_x,pt_y,pt_z]))
-        print("collision occur at",(pt_x,pt_y,pt_z))
-        collied = True
-  collision_points = np.array(collision_points)
-  if verbose and len(collision_points) > 1:
-    ax.plot(collision_points[:,0], collision_points[:,1], collision_points[:,2], 'y*')
-  elif verbose and len(collision_points) == 1:
-    ax.plot(collision_points[0][0], collision_points[0][1], collision_points[0][2], 'y*')
+# def collision_checking_v2(blocks, path, ax=None, verbose=False):
+#   '''
+#   First check if next point is closed to any block or not
+#   path: [current_position, next_position]
+#   '''
+#   collision_points = []
+#   # current_position = path[0]
+#   # next_position = path[1]
+#   for p in path:
+#     pt_x,pt_y,pt_z = p[0], p[1], p[2]
+#     collied = False
+#     for block in blocks:
+#       # Minkowski sum of a motion step and a block
+#       if pt_x >= block[0]-0.5 and pt_x<=block[3]+0.5 and pt_y>=block[1]-0.5 and pt_y<=block[4]+0.5 and pt_z>=block[2]-0.5 and pt_z<=block[5]+0.5: 
+#         collision_points.append(np.array([pt_x,pt_y,pt_z]))
+#         print("collision occur at",(pt_x,pt_y,pt_z))
+#         collied = True
+#   collision_points = np.array(collision_points)
+#   if verbose and len(collision_points) > 1:
+#     ax.plot(collision_points[:,0], collision_points[:,1], collision_points[:,2], 'y*')
+#   elif verbose and len(collision_points) == 1:
+#     ax.plot(collision_points[0][0], collision_points[0][1], collision_points[0][2], 'y*')
     
-  return collision_points, collied
+#   return collision_points, collied
 
 def tic():
   return time.time()
@@ -220,13 +208,18 @@ def meter2grid(boundary, position, resolution):
     x = position
     return tuple(np.floor((x-m)/r).astype(int))
 
+def cells2meters(boundary, position, resolution):
+    m = boundary[0,:3]
+    r = resolution*np.ones(3)
+    x = position
+    return (x)*r+m
 
 def test_single_cube(verbose = True):
   print('Running single cube test...\n') 
   start = np.array([2.3, 2.3, 1.3])
   goal = np.array([7.0, 7.0, 5.5])
   map_path = './maps/single_cube.txt'
-  return start, goal, map_path
+  return start, goal, map_path, "single_cube"
   
   
 def test_maze(verbose = True):
@@ -234,7 +227,7 @@ def test_maze(verbose = True):
   start = np.array([0.0, 0.0, 1.0])
   goal = np.array([12.0, 12.0, 5.0])
   map_path = './maps/maze.txt'
-  return start, goal, map_path
+  return start, goal, map_path, "maze"
 
     
 def test_window(verbose = True):
@@ -242,7 +235,7 @@ def test_window(verbose = True):
   start = np.array([0.2, -4.9, 0.2])
   goal = np.array([6.0, 18.0, 3.0])
   map_path = './maps/window.txt'
-  return start, goal, map_path
+  return start, goal, map_path, "window"
 
   
 def test_tower(verbose = True):
@@ -250,7 +243,7 @@ def test_tower(verbose = True):
   start = np.array([2.5, 4.0, 0.5])
   goal = np.array([4.0, 2.5, 19.5])
   map_path = './maps/tower.txt'
-  return start, goal, map_path
+  return start, goal, map_path, "tower"
 
      
 def test_flappy_bird(verbose = True):
@@ -258,7 +251,7 @@ def test_flappy_bird(verbose = True):
   start = np.array([0.5, 2.5, 5.5])
   goal = np.array([19.0, 2.5, 5.5])
   map_path = './maps/flappy_bird.txt'
-  return start, goal, map_path
+  return start, goal, map_path, "flappy_bird"
 
   
 def test_room(verbose = True):
@@ -266,7 +259,7 @@ def test_room(verbose = True):
   start = np.array([1.0, 5.0, 1.5])
   goal = np.array([9.0, 7.0, 1.5])
   map_path = './maps/room.txt'
-  return start, goal, map_path
+  return start, goal, map_path, "room"
 
 
 def test_monza(verbose = True):
@@ -274,4 +267,11 @@ def test_monza(verbose = True):
   start = np.array([0.5, 1.0, 4.9])
   goal = np.array([3.8, 1.0, 0.1])
   map_path = './maps/monza.txt'
-  return start, goal, map_path
+  return start, goal, map_path, "monza"
+
+def draw_trees(ax, trees):
+  colors = ['darkblue', 'teal']
+  for i, tree in enumerate(trees):
+    for start, end in tree.E.items():
+      if end is not None:
+          ax.plot([start[0], end[0]], [start[1], end[1]], [start[2], end[2]], color = colors[i], linewidth=1)
