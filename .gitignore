@@ -3,3 +3,4 @@ test_grid.py
 test_animation.py
 test_ompl.py
 results/
+test/

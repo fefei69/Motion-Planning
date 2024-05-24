@@ -26,7 +26,7 @@ def check_points_in_LineSegments(pt1, pt2, collision_points):
   line_seg = LineSegment(pt1, pt2)
   return line_seg.contains_point(collision_points)
 
-def collision_checking(blocks, path, planes_dict, ax, verbose=False):
+def collision_checking_robust(blocks, path, planes_dict, ax, verbose=False):
   '''
   check if the path collides with the blocks(obstacles) using AABBs and line segment intersection
   Treating path as a set of points and check if each points collide with blocks
@@ -61,74 +61,12 @@ def collision_checking(blocks, path, planes_dict, ax, verbose=False):
     ax.plot(collision_points[:,0], collision_points[:,1], collision_points[:,2], 'y*')
   if len(collision_points) > 0:
     collided = True
+    print("Collision Detected!")
   else:
     collided = False  
+    print("No collision detected in your path!")
   return collision_points, collided
 
-def collision_checking_ori(blocks, path, planes_dict, ax, verbose=False):
-  '''
-  check if the path collides with the blocks(obstacles) using AABBs and line segment intersection
-  Treating path as a set of points and check if each points collide with blocks
-  '''
-  collision_points = []
-  for i, block in enumerate(blocks):
-    planes = planes_dict[i]
-
-    for p in range(len(path)-1):
-      point_intersections = []
-      for plane in planes:
-        plane_normal = plane.normal
-        path_line = Line.from_points(path[p], path[p+1])
-        path_line_dir = path_line.direction
-        # skip collision checking if the plane and the path are parallel
-        if plane_normal.is_perpendicular(path_line_dir):
-          continue
-        point_intersections.append(plane.intersect_line(path_line))
-      
-      for i in range(len(point_intersections)):
-        pt_x = point_intersections[i][0]
-        pt_y = point_intersections[i][1]
-        pt_z = point_intersections[i][2]
-        # AABBs
-        if pt_x >= block[0] and pt_x<=block[3] and pt_y>=block[1] and pt_y<=block[4] and pt_z>=block[2] and pt_z<=block[5]: 
-          # check if the point is in the line segment
-          is_contained = check_points_in_LineSegments(path[p], path[p+1], np.array([pt_x,pt_y,pt_z]))
-          if is_contained:
-            collision_points.append(np.array([pt_x,pt_y,pt_z]))
-            # print("collision occur at",(pt_x,pt_y,pt_z))
-  collision_points = np.array(collision_points)
-  if verbose and len(collision_points) > 0:
-    ax.plot(collision_points[:,0], collision_points[:,1], collision_points[:,2], 'g.')
-  if len(collision_points) > 0:
-    collided = True
-  else:
-    collided = False  
-  return collision_points, collided
-
-# def collision_checking_v2(blocks, path, ax=None, verbose=False):
-#   '''
-#   First check if next point is closed to any block or not
-#   path: [current_position, next_position]
-#   '''
-#   collision_points = []
-#   # current_position = path[0]
-#   # next_position = path[1]
-#   for p in path:
-#     pt_x,pt_y,pt_z = p[0], p[1], p[2]
-#     collied = False
-#     for block in blocks:
-#       # Minkowski sum of a motion step and a block
-#       if pt_x >= block[0]-0.5 and pt_x<=block[3]+0.5 and pt_y>=block[1]-0.5 and pt_y<=block[4]+0.5 and pt_z>=block[2]-0.5 and pt_z<=block[5]+0.5: 
-#         collision_points.append(np.array([pt_x,pt_y,pt_z]))
-#         print("collision occur at",(pt_x,pt_y,pt_z))
-#         collied = True
-#   collision_points = np.array(collision_points)
-#   if verbose and len(collision_points) > 1:
-#     ax.plot(collision_points[:,0], collision_points[:,1], collision_points[:,2], 'y*')
-#   elif verbose and len(collision_points) == 1:
-#     ax.plot(collision_points[0][0], collision_points[0][1], collision_points[0][2], 'y*')
-    
-#   return collision_points, collied
 
 def tic():
   return time.time()
@@ -275,3 +213,32 @@ def draw_trees(ax, trees):
     for start, end in tree.E.items():
       if end is not None:
           ax.plot([start[0], end[0]], [start[1], end[1]], [start[2], end[2]], color = colors[i], linewidth=1)
+
+def find_path(closed, blocks, boundary, ax, MAP_RESOLUTION, goal, linewidth=2, draw_path=True ,debug=False):
+  path = [goal]
+  last_key = meter2grid(boundary, goal,resolution=MAP_RESOLUTION)
+  while True:
+    last_node = closed.pop(last_key)
+    prev_pos = last_node.parent_position
+    if prev_pos is None:
+      break
+    prev_node = closed[meter2grid(boundary, prev_pos, resolution=MAP_RESOLUTION)]
+    path.append(prev_node.position)
+    last_key = prev_node.pqkey
+    # print(f"last_key: {last_key}")
+  collision_checking_robust(blocks, path, generate_planes(blocks), ax, verbose=True)
+  path = np.array(path)
+  if debug==True:
+    print("Path: ",path)
+    ax.plot(path[:,0],path[:,1],path[:,2],'r.')
+  elif draw_path==True:
+    ax.plot(path[:,0],path[:,1],path[:,2],'r-',linewidth=linewidth)
+  print(f"Path Length: {np.sum(np.sqrt(np.sum(np.diff(path,axis=0)**2,axis=1)))}")
+
+def draw_nodes(graph, open, closed, ax, ALPHA):
+  open_nodes = [graph[node].position for node in open.keys()]
+  open_nodes = np.array(open_nodes)
+  ax.scatter(open_nodes[:,0], open_nodes[:,1], open_nodes[:,2], s=1, marker='s', color='grey',alpha=ALPHA)
+  closed_nodes = [node.position for node in closed.values()]
+  closed_nodes = np.array(closed_nodes)
+  ax.scatter(closed_nodes[:,0], closed_nodes[:,1], closed_nodes[:,2], marker='.', color='orange',alpha=ALPHA)

@@ -1,18 +1,20 @@
 
 import argparse
+import time
 import numpy as np
 import matplotlib.pyplot as plt; plt.ion()
+from rrt_algorithms.rrt import RRT
 from rrt_algorithms.rrt_star_bid import RRTStarBidirectional
 from rrt_algorithms.rrt_connect import RRTConnect
 from rrt_algorithms.rrt_star import RRTStar
 from rrt_algorithms.search_space import SearchSpace
 from read_map import *
-from utils import draw_map, draw_trees
+from utils import draw_map, draw_trees, collision_checking_robust, generate_planes
 
 def main():
     parser = argparse.ArgumentParser(description="RRT* Path Planning")
     parser.add_argument('--alg', type=str, default='rrt_bid', 
-                        choices=['rrt_bid', 'rrt_con', 'rrt_star'],
+                        choices=['rrt_bid', 'rrt_con', 'rrt_star','rrt'],
                         help='Choose a RRT* algorithm, default is RRT* bidirectional algorithm')
     parser.add_argument('--test_case', type=str, required=True, 
                         choices=['single_cube', 'maze', 'flappy_bird', 'monza', 'window', 'tower', 'room'],
@@ -51,7 +53,7 @@ def main():
 
     # Create Search Space
     X = SearchSpace(X_dimensions, Obstacles)
-
+    start_time = time.time()
     # Initialize RRT* algorithm with parsed arguments
     if args.alg == 'rrt_bid':
         rrt = RRTStarBidirectional(X, args.q, x_init, x_goal, args.max_samples, args.r, args.prc, args.rewire_count)
@@ -62,20 +64,26 @@ def main():
     elif args.alg == 'rrt_star':
         rrt = RRTStar(X, args.q, x_init, x_goal, args.max_samples, args.r, args.prc, args.rewire_count)
         path = rrt.rrt_star()
+    elif args.alg == 'rrt':
+        rrt = RRT(X, args.q, x_init, x_goal, args.max_samples, args.r, args.prc)
+        path = rrt.rrt_search()
     else:
         raise ValueError("Unknown RRT* algorithm")
-    
+    end_time = time.time()
     if len(path) == 0:
         print("No path found")
         return None
-
-    path = np.array(path)
     
     print("Drawing map.....")
     fig, ax, hb, hs, hg = draw_map(boundary, blocks, start, goal)
+    collision_checking_robust(blocks, path, generate_planes(blocks), ax, verbose=True)
+    print(f"Path Length: {np.sum(np.sqrt(np.sum(np.diff(path,axis=0)**2,axis=1)))}")
+    print("Time taken: ", end_time - start_time)
+    path = np.array(path)
+    
+   
     draw_trees(ax, rrt.trees)
     ax.plot(path[:,0], path[:,1], path[:,2], 'r-')
     plt.show(block=True)
-
 if __name__ == '__main__':
     main()

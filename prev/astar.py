@@ -1,20 +1,17 @@
 
-'''
-Improve Collision checking by using R-trees
-'''
+# priority queue for OPEN list
 from pqdict import pqdict
 import numpy as np
 import math
 from tqdm import tqdm
 from utils import *
-from rtree import index
-import uuid
+
 class AStarNode(object):
   def __init__(self, pqkey:tuple, position:np.ndarray, parent_position:tuple=None):
     self.pqkey = pqkey
     self.position = position
     self.g = math.inf
-    self.fval = self.g
+    # self.fval = fval
     # self.h = hval
     self.parent_position = parent_position
     # self.parent_action = None
@@ -28,76 +25,15 @@ class Environment(object):
   def __init__(self, start_pos, goal_pos, boundary, blocks):
     self.start_pos = start_pos
     self.goal_pos = goal_pos
-
     self.boundary = boundary
     self.blocks = blocks
-
-    self.resolution = 0.1
-    p = index.Property()
-    p.dimension = 3
-    self.obs = index.Index(self.obstacle_generator(blocks[:,0:6]), interleaved=True, properties=p)
-  
+    self.block_planes = self.get_block_planes(blocks)
+  def collision_check(self, path)->bool:
+    _, is_collision= collision_checking_robust(self.blocks, path, self.block_planes, ax=None, verbose=False)
+    return is_collision
   @staticmethod
-  def obstacle_generator(obstacles):
-    """
-    Add obstacles to r-tree
-    :param obstacles: list of obstacles
-    """
-    for obstacle in obstacles:
-      yield (uuid.uuid4().int, obstacle, obstacle)
-  
-  @staticmethod
-  def steer(start, goal, d):
-    """
-    Return a point in the direction of the goal, that is distance away from start
-    :param start: start location
-    :param goal: goal location
-    :param d: distance away from start
-    :return: point in the direction of the goal, distance away from start
-    """
-    start, end = np.array(start), np.array(goal)
-    v = end - start
-    u = v / (np.sqrt(np.sum(v ** 2)))
-    d = min(d, np.linalg.norm(goal - start))
-    steered_point = start + u * d
-    return tuple(steered_point)
-  
-  def es_points_along_line(self, start, end, r):
-    """
-    Equally-spaced points along a line defined by start, end, with resolution r
-    :param start: starting point
-    :param end: ending point
-    :param r: maximum distance between points
-    :return: yields points along line from start to end, separated by distance r
-    """
-    d = np.linalg.norm(np.array(start) - np.array(end))
-    n_points = int(np.ceil(d / r))
-    if n_points > 1:
-        step = d / (n_points - 1)
-        for i in range(n_points):
-            next_point = self.steer(start, end, i * step)
-            yield next_point
-
-  def obstacle_free(self, x):
-    """
-    Check if a location resides inside of an obstacle
-    :param x: location to check
-    :return: True if not inside an obstacle, False otherwise
-    """
-    return self.obs.count(x) == 0
-  
-  def collision_checking_v2(self, start, end):
-    """
-    Check if a line segment intersects an obstacle
-    :param start: starting point of line
-    :param end: ending point of line
-    :param r: resolution of points to sample along edge when checking for collisions
-    :return: True if line segment does not intersect an obstacle, False otherwise
-    """
-    r = self.resolution/2
-    points = self.es_points_along_line(start, end, r)
-    coll_free = all(map(self.obstacle_free, points))
-    return coll_free
+  def get_block_planes(blocks)->dict:
+    return generate_planes(blocks)
   
 
 class AStar(object):
@@ -113,7 +49,6 @@ class AStar(object):
   def plan(self, epsilon = 1):
     start_pos = self.environment.start_pos
     # Use position as the key, Node objects as the value
-    NODES = pqdict()
     OPEN = pqdict()
     CLOSED = pqdict()
     motion = self.motion
@@ -122,68 +57,76 @@ class AStar(object):
     boundary = self.environment.boundary  
     # Initial node
     curr = AStarNode(self.meter2grid(start_pos), start_pos, None)
-    curr.fval = 0 + self.calc_heuristic(start_pos)
-    curr.g = 0
-    OPEN[self.meter2grid(start_pos)] = curr.fval
-    NODES[self.meter2grid(start_pos)] = curr
+    curr.g = 0 + self.calc_heuristic(start_pos)
+    OPEN[self.meter2grid(start_pos)] = curr
+    # TODO: Implement A* here
     pbar = tqdm(total = horizon)
-    # A* planning algorithm
+    # for _ in range(horizon):
     while True:
       # find minimum f value in OPEN list
-      curr_key:tuple = OPEN.pop()
-      curr = NODES[curr_key]
+      curr_key = min(OPEN, key=lambda o: OPEN[o].g + self.calc_heuristic(OPEN[o].position))
+      # if curr_key ==self.meter2grid(self.goal_pos):
+      #   break
+      curr:AStarNode = OPEN.pop(curr_key)
       CLOSED[curr_key] = curr
       if pbar.n % 500 == 0:
         print(f"{np.linalg.norm(curr.position-self.goal_pos)} away from goal.")
+
+      # reach goal condition
+      # if np.linalg.norm(curr.position - self.goal_pos) <= 1:
+      #   print("Goal reached!")
+      #   # is_goal_reached = True
+      #   goal_node = AStarNode(self.meter2grid(self.goal_pos), 
+      #                         self.goal_pos, 
+      #                         tuple(curr.position))
+      #   CLOSED[curr_key] = curr
+      #   CLOSED[self.meter2grid(self.goal_pos)] = goal_node
+      #   pbar.close()
+      #   return CLOSED, OPEN
       
       if self.animation:
-        self.update_plot(curr.position, OPEN, CLOSED, NODES) 
+        self.update_plot(curr.position, OPEN, CLOSED) 
       # Expand nodes from current node using motion model
       for k in range(num_dirs):
         next_position = curr.position + motion[:,k] # in meters
         next_position_key = self.meter2grid(next_position)
         motion_cost = np.linalg.norm(motion[:,k])
+        New_Node = AStarNode(next_position_key, 
+                             next_position, 
+                             tuple(curr.position))
         # boundary check
         if self.check_out_of_boundary(next_position)==True:
           continue
         
         # collision check
-        if self.environment.collision_checking_v2(curr.position, next_position)==False:
+        if self.environment.collision_check([curr.position, next_position])==True:
           continue
 
-        New_Node = AStarNode(next_position_key, 
-                             next_position, 
-                             tuple(curr.position))
-        New_Node.g = curr.g + motion_cost
         # reach goal condition
-        if np.linalg.norm(next_position - self.goal_pos) <= 0.6:
+        if np.linalg.norm(next_position - self.goal_pos) <= 1:
           print("Goal reached!")
+          # is_goal_reached = True
           goal_node = AStarNode(self.meter2grid(self.goal_pos), 
-                                    self.goal_pos, 
-                                    tuple(next_position))
-          if self.meter2grid(self.goal_pos)!=next_position_key:
-            CLOSED[next_position_key] = New_Node
-            CLOSED[self.meter2grid(self.goal_pos)] = goal_node
-          else:
-            goal_node.parent_position = tuple(curr.position)
-            CLOSED[self.meter2grid(self.goal_pos)] = goal_node
-
+                                self.goal_pos, 
+                                tuple(next_position))
+          CLOSED[next_position_key] = New_Node
+          CLOSED[self.meter2grid(self.goal_pos)] = goal_node
           pbar.close()
-          return CLOSED, OPEN, NODES
+          return CLOSED, OPEN
 
-        # j should not be in CLOSED
+        # j not in CLOSED
         if next_position_key in CLOSED:
           continue
 
         # j not in OPEN, add j to OPEN
         if next_position_key not in OPEN:
-          NODES[next_position_key] = New_Node
           # update g value
-          OPEN[next_position_key] = New_Node.g + self.calc_heuristic(next_position)
-        elif NODES[next_position_key].g > curr.g + motion_cost:
-          NODES[next_position_key] = New_Node
+          New_Node.g = curr.g + motion_cost
+          OPEN[next_position_key] = New_Node
+        elif OPEN[next_position_key].g > curr.g + motion_cost:
           # found a better path
-          OPEN[next_position_key] = New_Node.g + self.calc_heuristic(next_position) #update f value
+          OPEN[next_position_key] = New_Node 
+          OPEN[next_position_key].g = curr.g + motion_cost
       pbar.update(1)
     # pbar.close()
     # return CLOSED, OPEN
@@ -223,11 +166,11 @@ class AStar(object):
        next_position[2]<=boundary[0][5]:
       return False
     return True
-  def update_plot(self, current_pos, open, closed, graph):
+  def update_plot(self, current_pos, open, closed):
     ax:Axes3D = self.ax
     ax.scatter(current_pos[0], current_pos[1], current_pos[2], s=5, color='blue', label='Current',marker='.')
     if open:
-      open_nodes = [graph[node].position for node in open.keys()]
+      open_nodes = [node.position for node in open.values()]
       open_nodes = np.array(open_nodes)
       ax.scatter(open_nodes[:,0], open_nodes[:,1], open_nodes[:,2], s=2, color='blue', label='Open', marker='.')
     if closed:
@@ -239,7 +182,7 @@ class AStar(object):
 
 def main(start, goal, mapfile, test_case):
   boundary, blocks = load_map(mapfile)
-  ANIMATION = True
+  ANIMATION = False
   if test_case == 'maze':
     MAP_RESOLUTION = 0.3
     HORIZON = 15000
@@ -247,7 +190,7 @@ def main(start, goal, mapfile, test_case):
   elif test_case == 'single_cube':
     MAP_RESOLUTION = 0.1
     HORIZON = 2000
-    ALPHA = 0.4
+    ALPHA = 0.2
   else:
     MAP_RESOLUTION = 0.3
     HORIZON = 15000
@@ -261,10 +204,10 @@ def main(start, goal, mapfile, test_case):
   fig, ax, hb, hs, hg = draw_map(boundary, blocks, start, goal)
   t0 = tic()
   AStarPlanner = AStar(env, ax=ax, map_resolution=MAP_RESOLUTION ,animation=ANIMATION, planning_horizon = HORIZON, num_dirs = 26)
-  closed, open, graph = AStarPlanner.plan()
+  closed, open = AStarPlanner.plan()
   toc(t0,"Planning")
 
-  open_nodes = [graph[node].position for node in open.keys()]
+  open_nodes = [node.position for node in open.values()]
   open_nodes = np.array(open_nodes)
   ax.scatter(open_nodes[:,0], open_nodes[:,1], open_nodes[:,2], s=1, marker='s', color='grey',alpha=ALPHA)
   closed_nodes = [node.position for node in closed.values()]
@@ -274,13 +217,13 @@ def main(start, goal, mapfile, test_case):
 
   path = [goal]
   last_key = meter2grid(boundary, goal,resolution=MAP_RESOLUTION)
-#   prev_pos = closed[last_key].parent_position
-#   print(closed[last_key].parent_position)
+  prev_pos = closed[last_key].parent_position
+  print(closed[last_key].parent_position)
   # TODO: Make the fowllowing path retrival a function
   while True:
     # last_node:AStarNode = closed[last_key]
     last_node:AStarNode = closed.pop(last_key)
-    prev_pos = last_node.parent_position
+    prev_pos:AStarNode = last_node.parent_position
     if prev_pos is None:
       break
     prev_node = closed[meter2grid(boundary, prev_pos, resolution=MAP_RESOLUTION)]
@@ -288,20 +231,22 @@ def main(start, goal, mapfile, test_case):
     last_key = prev_node.pqkey
     print(f"last_key: {last_key}")
   # path = np.array(list(closed.keys()))
-  collision_checking(blocks, path, generate_planes(blocks), ax, verbose=True)
+  collision_checking_robust(blocks, path, generate_planes(blocks), ax, verbose=True)
   path = np.array(path)
   ax.plot(path[:,0],path[:,1],path[:,2],'r-')
-  print(f"Path Length: {np.sum(np.sqrt(np.sum(np.diff(path,axis=0)**2,axis=1)))}")
+  pathlength = np.linalg.norm(path[1:,:] - path[:-1,:],axis=1).sum()
+  print(f"Path length: {pathlength}")
+  print(f"Default Path Length: {np.sum(np.sqrt(np.sum(np.diff(path,axis=0)**2,axis=1)))}")
   import pdb; pdb.set_trace()
 
 if __name__ == '__main__':  
-#   start, goal, mapfile, test_case = test_single_cube() # 0.8s Path length: 8.24 (resolution 0.1), 8.47(resolution 0.3)
-#   start, goal, mapfile, test_case = test_maze() # 03:27 Path length: 75.0454 resolution 0.3;
-  start, goal, mapfile, test_case = test_flappy_bird() # 04:37 path length: 26.25 (resolution 0.3)
-#   start, goal, mapfile, test_case = test_monza() # 02:18 Path length: 76.38 (resolution 0.3)
+  start, goal, mapfile, test_case = test_single_cube() # 0.8s Path length: 8.24 (resolution 0.1), 8.47(resolution 0.3)
+  # start, goal, mapfile, test_case = test_maze() #51:24 Path length: 75.4010 resolution 0.3; 21:09 Path length: 80.89711 resolution 0.4
+  # start, goal, mapfile, test_case = test_flappy_bird() # 04:37 path length: 26.25 (resolution 0.3)
+  # start, goal, mapfile, test_case = test_monza() # 02:18 Path length: 76.38 (resolution 0.3)
   # start, goal, mapfile, test_case = test_window() # 06:51 Path length: 26.92478 (resolution 0.3)
   # start, goal, mapfile, test_case = test_tower() # 11:57 Path length: 26.4953 (resolution 0.3)
-#   start, goal, mapfile, test_case = test_room() #01:15 Path length: 11.39 (resolution 0.3)
+  # start, goal, mapfile, test_case = test_room() #01:15 Path length: 11.39 (resolution 0.3)
   main(start, goal, mapfile, test_case)
 
   # closed[meter2grid(boundary, tuple(goal))]
