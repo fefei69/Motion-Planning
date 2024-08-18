@@ -7,7 +7,7 @@ In this project, we will focus on search-based and sampling-based motion plannin
 
 <p centering>
 
-## A* (Top Left and Right) and Weighted A* (Bottom Left and Right) in different test scenario
+#### A* (Top Left and Right) and Weighted A* (Bottom Left and Right) in different test scenario
 
 <div align="center">
     <img src="images/flappy.png" width="151" height="131">
@@ -19,7 +19,7 @@ In this project, we will focus on search-based and sampling-based motion plannin
 </div>
 
 
-## A* path planning algorithm in different test scenario
+#### A* path planning algorithm in different test scenario
 
 <div align="center">
     <img src="images/RRT_window.png" width="151" height="113">
@@ -32,7 +32,7 @@ In this project, we will focus on search-based and sampling-based motion plannin
 
 
 
-## RRT in Window and Maze Environments(Top Left, Top Right); RRT* in Window and Maze Environments(Bottom Left, Bottom Right)
+#### RRT in Window and Maze Environments(Top Left, Top Right), RRT* in Window and Maze Environments(Bottom Left, Bottom Right)
 
 <div align="center">
     <img src="images/RRT_window.png" width="151" height="113">
@@ -45,7 +45,7 @@ In this project, we will focus on search-based and sampling-based motion plannin
 
 
 
-## Bi-Directional RRT* path planning algorithm in different test scenario
+#### Bi-Directional RRT* path planning algorithm in different test scenario
 
 <div align="center">
     <img src="images/rrt_bid/cube.png" width="151" height="113">
