@@ -12,6 +12,8 @@ In this project, we will focus on search-based and sampling-based motion plannin
 <div align="center">
     <img src="images/flappy.png" width="151" height="131">
     <img src="images/window.png" width="151" height="131">
+</div>
+<div align="center">
     <img src="images/weighted_A/bird.png" width="151" height="131">
     <img src="images/weighted_A/window.png" width="151" height="131">
 </div>
@@ -22,6 +24,8 @@ In this project, we will focus on search-based and sampling-based motion plannin
 <div align="center">
     <img src="images/RRT_window.png" width="151" height="113">
     <img src="images/RRT_maze.png" width="151" height="113">
+</div>    
+<div align="center">
     <img src="images/RRT_satr_win.png" width="151" height="113">
     <img src="images/RRT_star_maze.png" width="151" height="113">
 </div>
@@ -33,6 +37,8 @@ In this project, we will focus on search-based and sampling-based motion plannin
 <div align="center">
     <img src="images/RRT_window.png" width="151" height="113">
     <img src="images/RRT_maze.png" width="151" height="113">
+</div>
+<div align="center">    
     <img src="images/RRT_satr_win.png" width="151" height="113">
     <img src="images/RRT_star_maze.png" width="151" height="113">
 </div>
@@ -45,6 +51,8 @@ In this project, we will focus on search-based and sampling-based motion plannin
     <img src="images/rrt_bid/cube.png" width="151" height="113">
     <img src="images/rrt_bid/maze.png" width="151" height="113">
     <img src="images/rrt_bid/bird.png" width="151" height="113">
+</div>
+<div align="center">
     <img src="images/rrt_bid/monza.png" width="151" height="113">
     <img src="images/rrt_bid/window.png" width="151" height="113">
     <img src="images/rrt_bid/room.png" width="151" height="113">
