@@ -3,7 +3,7 @@ from astar_planner import *
 
 def main(start, goal, mapfile, test_case, epsilon=1):
     boundary, blocks = load_map(mapfile)
-    ANIMATION = False
+    ANIMATION = True
     draw_path = True
 
     if test_case == 'maze':
