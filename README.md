@@ -5,58 +5,55 @@ In this project, we will focus on search-based and sampling-based motion plannin
 
 [Report of the project](https://drive.google.com/file/d/15PmhiIm68NDd3kgRTn9EB6amDcqkDHKF/view?usp=sharing)
 
-<p centering>
 
-#### A* (Top Left and Right) and Weighted A* (Bottom Left and Right) in different test scenario
+#### A* (Top Left and Right) and Weighted A* (Bottom Left and Right) in different test scenarios
 
 <div align="center">
-    <img src="images/flappy.png" width="151" height="131">
-    <img src="images/window.png" width="151" height="131">
+    <img src="images/flappy.png" width="227" height="197">
+    <img src="images/window.png" width="227" height="197">
 </div>
 <div align="center">
-    <img src="images/weighted_A/bird.png" width="151" height="131">
-    <img src="images/weighted_A/window.png" width="151" height="131">
+    <img src="images/weighted_A/bird.png" width="227" height="197">
+    <img src="images/weighted_A/window.png" width="227" height="197">
 </div>
 
-
-#### A* path planning algorithm in different test scenario
+#### A* path planning algorithm in different test scenarios
 
 <div align="center">
-    <img src="images/RRT_window.png" width="151" height="113">
-    <img src="images/RRT_maze.png" width="151" height="113">
+    <img src="images/RRT_window.png" width="227" height="170">
+    <img src="images/RRT_maze.png" width="227" height="170">
 </div>    
 <div align="center">
-    <img src="images/RRT_satr_win.png" width="151" height="113">
-    <img src="images/RRT_star_maze.png" width="151" height="113">
+    <img src="images/RRT_satr_win.png" width="227" height="170">
+    <img src="images/RRT_star_maze.png" width="227" height="170">
 </div>
 
 
 
-#### RRT in Window and Maze Environments(Top Left, Top Right), RRT* in Window and Maze Environments(Bottom Left, Bottom Right)
+#### RRT in Window and Maze Environments (Top Left, Top Right), RRT* in Window and Maze Environments (Bottom Left, Bottom Right)
 
 <div align="center">
-    <img src="images/RRT_window.png" width="151" height="113">
-    <img src="images/RRT_maze.png" width="151" height="113">
+    <img src="images/RRT_window.png" width="227" height="170">
+    <img src="images/RRT_maze.png" width="227" height="170">
 </div>
 <div align="center">    
-    <img src="images/RRT_satr_win.png" width="151" height="113">
-    <img src="images/RRT_star_maze.png" width="151" height="113">
+    <img src="images/RRT_satr_win.png" width="227" height="170">
+    <img src="images/RRT_star_maze.png" width="227" height="170">
 </div>
 
-
-
-#### Bi-Directional RRT* path planning algorithm in different test scenario
+#### Bi-Directional RRT* path planning algorithm in different test scenarios
 
 <div align="center">
-    <img src="images/rrt_bid/cube.png" width="151" height="113">
-    <img src="images/rrt_bid/maze.png" width="151" height="113">
-    <img src="images/rrt_bid/bird.png" width="151" height="113">
+    <img src="images/rrt_bid/cube.png" width="227" height="170">
+    <img src="images/rrt_bid/maze.png" width="227" height="170">
+    <img src="images/rrt_bid/bird.png" width="227" height="170">
 </div>
 <div align="center">
-    <img src="images/rrt_bid/monza.png" width="151" height="113">
-    <img src="images/rrt_bid/window.png" width="151" height="113">
-    <img src="images/rrt_bid/room.png" width="151" height="113">
+    <img src="images/rrt_bid/monza.png" width="227" height="170">
+    <img src="images/rrt_bid/window.png" width="227" height="170">
+    <img src="images/rrt_bid/room.png" width="227" height="170">
 </div>
+
 
 # How to use
 ## Searh-based method - A*
